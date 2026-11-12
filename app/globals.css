@@ -13,13 +13,13 @@
 }
 * { box-sizing: border-box; }
 /* rem everywhere so the layout follows the user's text size */
-body { margin: 0; background: var(--bg); color: var(--fg); font: 100%/1.4 system-ui, -apple-system, sans-serif; -webkit-text-size-adjust: 100%; }
+body { margin: 0; overflow-wrap: anywhere; background: var(--bg); color: var(--fg); font: 100%/1.4 system-ui, -apple-system, sans-serif; -webkit-text-size-adjust: 100%; }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
 .top, .searchbar, main { max-width: 44rem; margin: 0 auto; padding-inline: max(1rem, env(safe-area-inset-left)) max(1rem, env(safe-area-inset-right)); }
 
 .top { padding-top: max(1.25rem, env(safe-area-inset-top)); }
 h1 { font-size: 2.125rem; line-height: 1.1; letter-spacing: -.022em; font-weight: 700; margin: 0; }
-h2 { font-size: 1.375rem; line-height: 1.2; letter-spacing: -.012em; font-weight: 700; margin: 0; flex: 1; min-width: 0; overflow-wrap: anywhere; }
+h2 { font-size: 1.375rem; line-height: 1.2; letter-spacing: -.012em; font-weight: 700; margin: 0; flex: 1 1 auto; min-width: 0; }
 h3 { font-size: .8125rem; font-weight: 400; color: var(--muted); text-transform: uppercase; letter-spacing: .02em; margin: 1rem 1rem .375rem; }
 .muted { color: var(--muted); font-size: .875rem; margin: 0; }
 
@@ -33,6 +33,7 @@ input, button, select { font: inherit; color: inherit; }
 input:not([type="range"]), select {
   flex: 1; min-width: 0; height: 2.75rem; padding: 0 .875rem; border: 0; border-radius: .75rem; background: var(--fill);
 }
+input[type="search"] { appearance: none; -webkit-appearance: none; }
 input::placeholder { color: var(--muted); }
 input[type="range"] { width: 100%; accent-color: var(--accent); height: 2rem; }
 button {
@@ -50,11 +51,14 @@ button.small { height: 2.25rem; padding: 0 .875rem; font-size: .875rem; }
 main { padding-top: .5rem; padding-bottom: max(2rem, env(safe-area-inset-bottom)); }
 .card { background: var(--card); border-radius: 1.125rem; margin: 0; padding: 0; list-style: none; overflow: hidden; }
 .settings { display: grid; gap: 1rem; padding: 1rem; overflow: visible; }
-.field { display: grid; gap: .375rem; position: relative; }
+.field { display: grid; grid-template-columns: minmax(0, 1fr); gap: .375rem; position: relative; min-width: 0; }
 .field label { font-size: .8125rem; color: var(--muted); display: flex; justify-content: space-between; }
 .field .value { color: var(--fg); font-variant-numeric: tabular-nums; }
-.row { display: flex; gap: .5rem; }
-.filters { display: grid; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); gap: .75rem; margin: 1.25rem .25rem 0; }
+/* the button drops below the input instead of squeezing it */
+.row { display: flex; flex-wrap: wrap; gap: .5rem; }
+.row input { flex: 1 1 11rem; }
+.row button { flex: 1 0 auto; }
+.filters { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(9rem, 100%), 1fr)); gap: .75rem; margin: 1.25rem .25rem 0; }
 .filters .field label { padding-left: .25rem; }
 select { width: 100%; background-color: var(--card); }
 .filters input { background: var(--card); width: 100%; }
@@ -66,17 +70,20 @@ select { width: 100%; background-color: var(--card); }
   transform-origin: top; animation: arrive .18s ease-out;
 }
 .suggest button {
-  width: 100%; display: flex; justify-content: space-between; gap: 1rem; border-radius: .625rem;
+  width: 100%; height: auto; min-height: 2.75rem; padding-block: .5rem; white-space: normal;
+  display: flex; justify-content: space-between; align-items: center; gap: 1rem; border-radius: .625rem;
   background: none; color: var(--fg); font-weight: 400; text-align: left;
 }
+.suggest .muted { flex: none; white-space: nowrap; }
 .suggest button:hover { background: var(--fill); }
 
-.map { height: 55vh; margin-top: 1rem; border-radius: 1.125rem; overflow: hidden; z-index: 0; animation: arrive .25s ease-out; }
 @keyframes arrive { from { opacity: 0; transform: scale(.97); } }
 
 .results { margin-top: 1.75rem; }
 .results[aria-busy="true"] .card { opacity: .5; }
-.head { display: flex; align-items: center; gap: .5rem; margin: 0 .25rem .625rem; }
+.head { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin: 0 .25rem .625rem; }
+/* a long title takes the full line and the buttons move below it together */
+.actions { display: flex; gap: .5rem; }
 .empty { color: var(--muted); padding: 1.25rem 1rem; margin: 0; text-align: center; }
 main > .empty { padding-top: 3rem; }
 
@@ -85,12 +92,18 @@ main > .empty { padding-top: 3rem; }
 .offer + .offer { box-shadow: inset 0 1px 0 var(--line); }
 .offer img { flex: none; width: 4rem; height: 4rem; object-fit: contain; background: #fff; border-radius: .75rem; }
 .offer .text { flex: 1; min-width: 0; display: grid; gap: .125rem; }
-.offer .title { font-weight: 600; line-height: 1.25; overflow-wrap: anywhere; }
+.offer .title { font-weight: 600; line-height: 1.25; }
 .offer .desc { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .price { flex: none; display: grid; justify-items: end; text-align: right; font-variant-numeric: tabular-nums; }
 .price strong { font-size: 1.25rem; line-height: 1.2; letter-spacing: -.01em; }
 .price s, .price span { color: var(--muted); font-size: .8125rem; }
 .price .off { color: var(--good); font-weight: 600; }
+/* Phones: the price gets its own line under the text instead of squeezing the title into a sliver */
+@media (max-width: 30rem) {
+  .offer { flex-wrap: wrap; row-gap: .25rem; }
+  .offer img { width: 3.5rem; height: 3.5rem; }
+  .price { flex: 1 0 100%; display: flex; flex-flow: row-reverse wrap; justify-content: flex-start; align-items: baseline; gap: 0 .625rem; }
+}
 .badges { display: flex; flex-wrap: wrap; gap: .375rem; margin-top: .25rem; }
 .badges:empty { display: none; }
 .badge { font-size: .75rem; font-weight: 600; padding: .125rem .5rem; border-radius: 999px; background: var(--fill); color: var(--muted); white-space: nowrap; }
@@ -101,7 +114,7 @@ a { color: var(--accent); text-decoration: none; }
 a:hover { text-decoration: underline; }
 
 @media (prefers-reduced-motion: reduce) {
-  .suggest, .map { animation: none; }
+  .suggest { animation: none; }
   button { transition: none; }
   button:active:not(:disabled) { transform: none; }
 }

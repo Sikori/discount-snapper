@@ -1,11 +1,7 @@
 "use client";
-import dynamic from "next/dynamic";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Branch, Offer } from "@/lib/logic";
 import { distanceKm, mapsUrl } from "@/lib/logic";
-import type { Pin } from "./MapView";
-
-const MapView = dynamic(() => import("./MapView"), { ssr: false });
 
 type Loc = { zip: string; name: string; lat: number; lon: number };
 type Near = Branch & { km: number };
@@ -43,7 +39,6 @@ export default function Page() {
   const [draft, setDraft] = useState("");
   const [adhoc, setAdhoc] = useState("");
   const [results, setResults] = useState<Record<string, Result | "loading" | "error">>({});
-  const [showMap, setShowMap] = useState(false);
   const [store, setStore] = useState("");
   const [sort, setSort] = useState("unit");
   const [maxPrice, setMaxPrice] = useState("");
@@ -139,24 +134,6 @@ export default function Page() {
     if (t) setAdhoc(t);
   }
 
-  const pins = useMemo(() => {
-    const byPlace = new Map<string, Pin>();
-    for (const t of terms) {
-      const r = results[keyOf(t)];
-      if (!r || typeof r === "string") continue;
-      for (const b of r.branches) {
-        const id = `${b.lat},${b.lon}`;
-        const pin = byPlace.get(id) ?? { lat: b.lat, lon: b.lon, title: b.name, lines: [] };
-        for (const o of r.offers) {
-          if (o.chainKey === b.chainKey) pin.lines.push(`${o.title} – ${eur.format(o.price)}`);
-        }
-        byPlace.set(id, pin);
-      }
-    }
-    return [...byPlace.values()];
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [terms, results, loc, radiusQ]);
-
   const stores = useMemo(() => {
     const names = new Map<string, string>();
     for (const t of terms) {
@@ -246,14 +223,7 @@ export default function Page() {
             </label>
             <input id="radius" type="range" min={1} max={50} value={radius} onChange={(e) => setRadius(Number(e.target.value))} />
           </div>
-          {loc && (
-            <button type="button" aria-expanded={showMap} onClick={() => setShowMap(!showMap)}>
-              {showMap ? "Karte ausblenden" : "Karte anzeigen"}
-            </button>
-          )}
         </section>
-
-        {loc && showMap && <MapView lat={loc.lat} lon={loc.lon} radiusKm={radiusQ} pins={pins} />}
 
         {loc && terms.length > 0 && (
           <div className="filters" role="group" aria-label="Filter und Sortierung">
@@ -333,18 +303,20 @@ export default function Page() {
             <section key={term} className="results" aria-busy={r === "loading"}>
               <div className="head">
                 <h2>{term}</h2>
-                <button type="button" className="small" onClick={() => run(term, true)} disabled={r === "loading"}>
-                  Aktualisieren
-                </button>
-                {watched ? (
-                  <button type="button" className="small" onClick={() => setWatchlist(watchlist.filter((t) => t !== term))}>
-                    Entfernen
+                <div className="actions">
+                  <button type="button" className="small" onClick={() => run(term, true)} disabled={r === "loading"}>
+                    Aktualisieren
                   </button>
-                ) : (
-                  <button type="button" className="small primary" onClick={() => setWatchlist([...watchlist, term])}>
-                    Merken
-                  </button>
-                )}
+                  {watched ? (
+                    <button type="button" className="small" onClick={() => setWatchlist(watchlist.filter((t) => t !== term))}>
+                      Entfernen
+                    </button>
+                  ) : (
+                    <button type="button" className="small primary" onClick={() => setWatchlist([...watchlist, term])}>
+                      Merken
+                    </button>
+                  )}
+                </div>
               </div>
               {r === "error" && <p className="notice" role="alert">Die Suche ist fehlgeschlagen. Bitte aktualisieren.</p>}
               {data?.failed.map((f) => (
