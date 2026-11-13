@@ -1,4 +1,5 @@
 import { cached, HOUR } from "../cache";
+import { MAX_HITS } from "./limit";
 import { chainKey, needsApp, unitPrice, type Offer } from "../logic";
 
 // Undocumented API: the keys are published in the homepage's config JSON and rotate.
@@ -42,8 +43,7 @@ async function page(q: string, zip: string, offset: number, retry = true): Promi
 
 export async function search(q: string, { zip }: { zip: string }): Promise<Offer[]> {
   const raw: Raw[] = [];
-  // shortcut: stops at 300 hits, enough for a product term; raise if broad terms get cut off.
-  for (let offset = 0; offset < 300; offset += 100) {
+  for (let offset = 0; offset < MAX_HITS; offset += 100) {
     const p = await page(q, zip, offset);
     raw.push(...p.results);
     if (p.results.length === 0 || raw.length >= p.totalResults) break;

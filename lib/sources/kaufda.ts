@@ -1,3 +1,4 @@
+import { MAX_HITS } from "./limit";
 import { chainKey, needsApp, parseBasePrice, type Offer } from "../logic";
 
 // Undocumented API behind kaufda.de's own search page; no key needed.
@@ -23,8 +24,7 @@ async function page(q: string, lat: number, lon: number, offset: number) {
 export async function search(q: string, { lat, lon }: { lat: number; lon: number }): Promise<Offer[]> {
   const raw: Raw[] = [];
   const brochures = new Map<string, Brochure["content"]>();
-  // shortcut: stops at 300 hits like marktguru; raise if broad groups get cut off.
-  for (let offset = 0; offset < 300; offset += 100) {
+  for (let offset = 0; offset < MAX_HITS; offset += 100) {
     const p = await page(q, lat, lon, offset);
     raw.push(...p.offers);
     for (const b of p.brochures) brochures.set(b.content.id, b.content);

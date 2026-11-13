@@ -27,6 +27,20 @@ const eur = new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" 
 const day = (iso: string) => new Date(iso).toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" });
 const km = (n: number) => n.toLocaleString("de-DE", { maximumFractionDigits: 1 }) + " km";
 
+const STEP = 40;
+
+// Invisible marker at the end of a list: asks for more rows shortly before it scrolls into view.
+function More({ onMore }: { onMore: () => void }) {
+  const ref = useRef<HTMLDivElement>(null);
+  // no dependency list on purpose: re-observing after each render keeps loading while the marker is still in view
+  useEffect(() => {
+    const io = new IntersectionObserver(([e]) => e.isIntersecting && onMore(), { rootMargin: "800px" });
+    io.observe(ref.current!);
+    return () => io.disconnect();
+  });
+  return <div ref={ref} />;
+}
+
 export default function Page() {
   const [ready, setReady] = useState(false);
   const [plz, setPlz] = useState<Plz[]>([]);
@@ -40,8 +54,9 @@ export default function Page() {
   const [adhoc, setAdhoc] = useState("");
   const [results, setResults] = useState<Record<string, Result | "loading" | "error">>({});
   const [store, setStore] = useState("");
-  const [sort, setSort] = useState("unit");
+  const [sort, setSort] = useState("asc");
   const [maxPrice, setMaxPrice] = useState("");
+  const [limits, setLimits] = useState<Record<string, number>>({}); // offers rendered per term, grows on scroll
   const seenAtLoad = useRef(new Set<string>());
 
   useEffect(() => {
@@ -239,8 +254,8 @@ export default function Page() {
             <div className="field">
               <label htmlFor="sort">Sortierung</label>
               <select id="sort" value={sort} onChange={(e) => setSort(e.target.value)}>
-                <option value="unit">Grundpreis</option>
                 <option value="asc">Preis aufsteigend</option>
+                <option value="unit">Grundpreis</option>
                 <option value="desc">Preis absteigend</option>
                 <option value="dist">Entfernung</option>
               </select>
@@ -260,8 +275,9 @@ export default function Page() {
           const watched = watchlist.includes(term);
           const data = r && typeof r !== "string" ? r : null;
           const shown = data ? visible(data.offers) : [];
-          const nearby = shown.filter((o) => o.branch);
-          const noBranch = shown.filter((o) => !o.branch);
+          const limit = limits[term] ?? STEP;
+          const nearby = shown.filter((o) => o.branch).slice(0, limit);
+          const noBranch = shown.filter((o) => !o.branch).slice(0, limit - nearby.length);
           const item = (o: Hit) => (
             <li key={o.id} className="offer">
               {o.image && (
@@ -334,6 +350,7 @@ export default function Page() {
                   <ul className="card">{noBranch.map(item)}</ul>
                 </>
               )}
+              {shown.length > limit && <More onMore={() => setLimits((l) => ({ ...l, [term]: limit + STEP }))} />}
             </section>
           );
         })}
